@@ -1,0 +1,54 @@
+How Java Program Works & it's 3 Important Components (JVM, JRE, & JDK)
+
+What is JAVA?
+• Platform Independent Language 
+• Supports OOPS
+• Portability [WORA - Write Once Run Anywhere]
+
+3 Main Components of Java
+JDK, JRE and JVM.
+
+➤ JVM: Java Virtual Machine
+- It's just an abstract machine that doesn't exist physically.
+
+Flow:
+Java Program (.java file) -> [Compiler] -> Byte Code [.class file] -> [JVM] -> Machine Code -> [CPU] -> Output.
+
+Since JVM is dependent platform, we need to install JVM based on the platform i.e. MacOS, Linux, or windows. 
+Input to JVM is ByteCode & output is Machine code.
+Now since by ByteCode can be run by any JVM, it makes a Java Program Platform independent.
+JVM has JIT (Just In Time) compiler which takes ByteCode & convert it into machine code.
+
+➤ JRE: Java RunTime Environment
+JRE Contains JVM & core class libraries i e . the libraries we've which used in the code.
+So if we have JRE we can run any Java Program, but we cannot code the program.
+
+➤ JDK: Java Development Kit
+has additional components such as 
+• programming language(language information), 
+• java compiler(javac) to compile .java file into .class file(bytecode), 
+• debugger & other utilities 
+• + JRE
+
+JDK, JRE, and JVM, 
+JVM takes in byte code(.class files) and produce machine code, which then cpu executes and gives us output. 
+It handles memory management, garbage collection, and runtime optimizations.
+
+JRE is JVM with core class libraries (like java.lang, java.util, etc.), when we input jvm with byte code, while executing, it takes help of this class libraries to resolve that part of code,
+and that is why,
+if we have JRE, we can run any Java Program, but we cannot code it as it does not include development tools ,
+for it
+we need JDK
+which has additional components such as programming language(language information), java compiler(javac) to compile .java file into .class file(bytecode), debugger & and other utilities + JRE
+
+and therefore, all 3 JDK, JRE & JVM are platform dependent(since each OS has its own implementation), but because the bytecode can be executed by any JVM, 
+so Java bytecode is platform-independent because any JVM on any platform can interpret and run it.
+therefore, it concludes that Java Program is platform independent.
+
+JSE: Java Standard Edition 
+JEE: Java Enterprise Edition | Jakarta EE
+JME: Java Micro|Mobile Edition
+
+JSE is the core Java.
+JEE = JSE + Servlets + JSP + Transaction API + Persistence API.
+JME = API for Mobile Applications.
