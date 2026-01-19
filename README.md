@@ -4,6 +4,7 @@ I’ll be writing notes, adding examples, and summarizing key learnings for quic
 
 # 📘 Topics Covered
 • How Java Program Works & it's 3 Important Components (JVM, JRE, & JDK)
+• Classes in Java & Different Types of Inner Classes
 
 🎯 Goal
 To build a strong understanding of Java programming by learning, practicing, and documenting along the way.
