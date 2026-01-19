@@ -1,0 +1,226 @@
+Title: Classes in Java & Different Types of Inner Classes
+
+// ============================================
+//  TYPES OF INNER CLASSES IN JAVA
+// ============================================
+
+// 1️⃣ Static Inner Class (Nested Class)
+// ------------------------------------
+// - Declared with 'static' keyword inside another class.
+// - Does NOT require an instance of the outer class to be created.
+// - Can access only static members of the outer class directly.
+
+// 2️⃣ Non-Static Inner Class
+// ------------------------------------
+// These are tied to an instance of the outer class and can access both
+// static and instance members of the outer class directly.
+// Non-static inner classes are further divided into:
+
+    // 🟢 a) Member Inner Class
+    // ------------------------
+    // - Defined as a member of the outer class (like a field or method).
+    // - Most commonly used non-static inner class type.
+    // - Requires an instance of the outer class to be created.
+
+    // 🟢 b) Local Inner Class
+    // ------------------------
+    // - Defined within a method, constructor, or block.
+    // - Scope is limited to the block or method where it is declared.
+
+    // 🟢 c) Anonymous Inner Class
+    // ----------------------------
+    // - Class without a name that is declared and instantiated at the same time.
+    // - Commonly used when overriding methods of classes or interfaces inline.
+    // - Great for short-lived, single-use implementations.
+
+
+
+// Demonstration of Different Types of Inner Classes in Java
+// ----------------------------------------------------------
+// Inner classes allow logically grouping classes that are used only in one place,
+// improving encapsulation and code organization.
+
+class OuterClass {
+
+    // Instance variable (belongs to the object)
+    int instanceVariable = 10;
+
+    // Static variable (belongs to the class)
+    static int classVariable = 20;
+
+    // -------------------------------
+    // 1. Static Inner Class (NestedClass)
+    // -------------------------------
+    // - Can access only static members of the outer class directly.
+    // - Does NOT need an instance of the outer class to be created.
+    // - Often used for grouping helper classes.
+    static class NestedClass {
+
+        // Non-static method inside static inner class
+        public void justPrint() {
+            System.out.println("Inside Static Inner 'NestedClass' → Non-static method 'justPrint'");
+            // Can access static members of outer class
+            System.out.println("Outer static variable: " + classVariable);
+            // Cannot access instanceVariable directly here
+        }
+
+        // Static method inside static inner class
+        public static void print() {
+            System.out.println("Inside Static Inner 'NestedClass' → Static method 'print'");
+        }
+    }
+
+    // -------------------------------
+    // 2. Private Static Nested Class (NestedClass2)
+    // -------------------------------
+    // - Similar to a static inner class but with private visibility.
+    // - Can only be used within this outer class.
+    private static class NestedClass2 {
+        public void print2() {
+            System.out.println("Inside Private Static Inner 'NestedClass2' → Non-static method 'print2'");
+        }
+    }
+
+    // -------------------------------
+    // 3. Non-Static Inner Class (InnerClass)
+    // -------------------------------
+    // - Associated with an instance of the outer class.
+    // - Can access both static and instance members of the outer class.
+    class InnerClass {
+
+        public void print3() {
+            System.out.println("Inside Non-Static Inner 'InnerClass' → Non-static method 'print3'");
+            System.out.println("Accessing Outer Instance Variable: " + instanceVariable);
+            System.out.println("Accessing Outer Static Variable: " + classVariable);
+        }
+
+        // ✅ From Java 16 onwards:
+        // Static methods ARE allowed inside non-static inner classes.
+        // This change was introduced because static members are no longer implicitly tied to
+        // an instance of the enclosing class at runtime, allowing them to exist independently.
+        //
+        // Earlier (before Java 16), this was NOT allowed since inner classes were tightly
+        // associated with an instance of the outer class — meaning static members didn’t make
+        // sense inside a context that was inherently instance-bound.
+        
+        // public static void staticprint3() {
+        //     System.out.println("Invalid: Static method inside non-static Inner Class");
+        // }
+        
+        public static void staticprint3() {
+            System.out.println("From Java16 and later, it is Allowed, Static method inside non-static Inner Class");
+        }
+    }
+
+    // -------------------------------
+    // Method inside OuterClass to demonstrate instantiating private nested inner classes
+    // -------------------------------
+    public void display() {
+        NestedClass2 nestObj2 = new NestedClass2(); // Allowed since it's inside the same outer class
+        nestObj2.print2();
+    }
+    
+    
+        // -------------------------------
+    // 4️⃣ Local Inner Class Example
+    // -------------------------------
+    public void showLocalInnerClass() {
+        // Local inner class defined inside a method.
+        class LocalInner {
+            void message() {
+                System.out.println("Inside Local Inner Class → Defined within a method");
+            }
+        }
+
+        // Creating object of local inner class (only valid within this method)
+        LocalInner local = new LocalInner();
+        local.message();
+    }
+
+    // -------------------------------
+    // 5️⃣ Anonymous Inner Class Example
+    // -------------------------------
+    public void showAnonymousInnerClass() {
+        // Creating an anonymous inner class implementing Runnable interface
+        Runnable r = new Runnable() {
+            public void run() {
+                System.out.println("Inside Anonymous Inner Class → Implements Runnable interface");
+            }
+        };
+
+        // Calling run() method to demonstrate behavior
+        r.run();
+    }
+    
+}
+
+// -------------------------------
+// Main Class to Run the Example
+// -------------------------------
+public class Main {
+    public static void main(String[] args) {
+        System.out.println("=== Inner Class Demonstration ===\n");
+
+        // ✅ 1. Static Inner Class (NestedClass)
+        OuterClass.NestedClass.print(); // Calling static method directly using class name
+
+        OuterClass.NestedClass nestedObj = new OuterClass.NestedClass();
+        nestedObj.justPrint(); // Calling non-static method — requires object of the inner class
+
+        // ✅ 2. Private Static Inner Class (NestedClass2)
+        // Cannot access directly because it's private to OuterClass
+        // So we'll call it through a public method in OuterClass
+        OuterClass outerObj = new OuterClass();
+        outerObj.display();
+
+        // ✅ 3. Non-Static Inner Class (InnerClass)
+        // Must first create an instance of the outer class.
+        OuterClass.InnerClass innerObj = outerObj.new InnerClass();
+        innerObj.print3();
+        
+        // ✅ 4. Calling the static method inside a non-static inner class.
+        // Works fine from Java 16 onwards. Before Java 16, this would cause a compile-time error.
+        outerObj.new InnerClass().staticprint3();
+        
+         // ✅ 5. Local Inner Class
+        // Defined inside a method — has scope ONLY within that method.
+        outerObj.showLocalInnerClass();
+
+        // ✅ 6. Anonymous Inner Class
+        // Used for providing a short-lived implementation (e.g., interfaces or abstract classes).
+        outerObj.showAnonymousInnerClass();
+
+        System.out.println("\n=== End of Demonstration ===");
+    }
+}
+
+// OUTPUT:
+
+// === Inner Class Demonstration ===
+
+// Inside Static Inner 'NestedClass' → Static method 'print'
+// Inside Static Inner 'NestedClass' �� Non-static method 'justPrint'
+// Outer static variable: 20
+// Inside Private Static Inner 'NestedClass2' → Non-static method 'print2'
+// Inside Non-Static Inner 'InnerClass' → Non-static method 'print3'
+// Accessing Outer Instance Variable: 10
+// Accessing Outer Static Variable: 20
+// From Java16 and later, it is Allowed, Static method inside non-static Inner Class
+// Inside Local Inner Class → Defined within a method
+// Inside Anonymous Inner Class → Implements Runnable interface
+
+// === End of Demonstration ===
+
+
+// Key Takeaways
+// 1. Static Nested Class:
+// Does not depend on an instance of the outer class. 
+// Can access only static members of the outer class.
+// 2. Private Static Nested Class:
+// Same as above but cannot be accessed from outside the enclosing class — promotes encapsulation.
+// 3. Non-Static Inner Class:
+// Has access to both static and instance members of the outer class. 
+// Must be instantiated via an outer class object.
+// 4. Static Methods in Inner Classes:
+// Only allowed inside static nested classes, not inside non-static inner classes.
+
