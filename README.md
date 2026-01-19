@@ -3,7 +3,7 @@ This repository documents my learning journey through Java, starting from the ba
 I’ll be writing notes, adding examples, and summarizing key learnings for quick reference and revision.
 
 # 📘 Topics Covered
-• How Java Program Works & it's 3 Important Components (JVM, JRE, & JDK)
+• How Java Program Works & it's 3 Important Components (JVM, JRE, & JDK) <br/>
 • Classes in Java & Different Types of Inner Classes
 
 🎯 Goal
