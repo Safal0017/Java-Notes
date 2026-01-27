@@ -1,0 +1,92 @@
+//Key Takeaways from the Example:
+
+//Comparable (compareTo()): Inside class, defines natural ordering (carName)
+//Comparator: External, overrides natural ordering for specific sorts
+//Collections.sort(list) → Uses Comparable
+//Collections.sort(list, comparator) → Uses Comparator
+//list.sort() → Same as Collections.sort() (Java 8+)
+//Lambda: Modern, concise Comparator implementation
+
+import java.util.*;
+
+// Car implements Comparable<Car> for NATURAL ORDERING (by carName)
+class Car implements Comparable<Car> {
+    String carName;
+    String carType;
+    
+    // Default constructor
+    public Car() {}
+    
+    // Parameterized constructor
+    public Car(String carName, String carType) {
+        this.carName = carName;
+        this.carType = carType;
+    }
+    
+    // NATURAL ORDERING: compareTo() defines default sorting by carName
+    @Override
+    public int compareTo(Car other) {
+        return this.carName.compareTo(other.carName);
+    }
+    
+    @Override
+    public String toString() {
+        return carName + " (" + carType + ")";
+    }
+}
+
+// Custom Comparator for sorting by carType (external to Car class)
+class CarTypeComparator implements Comparator<Car> {
+    @Override
+    public int compare(Car o1, Car o2) {
+        return o1.carType.compareTo(o2.carType);
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        List<Car> cars = new ArrayList<>();
+        
+        // Add cars (unsorted initially)
+        cars.add(new Car("SUV", "Petrol"));
+        cars.add(new Car("Sedan", "Diesel"));
+        cars.add(new Car("Hatchback", "CNG"));
+        
+        System.out.println("=== 1. NATURAL ORDERING (Comparable - by carName) ===");
+        Collections.sort(cars);  // Uses compareTo() → sorts by carName
+        cars.forEach(car -> System.out.println(car));
+        
+        System.out.println("\n=== 2. COMPARATOR via CLASS (by carType) ===");
+        Collections.sort(cars, new CarTypeComparator());  // External comparator
+        cars.forEach(car -> System.out.println(car));
+        
+        System.out.println("\n=== 3. COMPARATOR via LAMBDA (by carType) ===");
+        cars.sort((c1, c2) -> c1.carType.compareTo(c2.carType));  // Lambda
+        cars.forEach(car -> System.out.println(car));
+        
+        System.out.println("\n=== 4. OVERRIDING Comparable with Lambda (by carName length) ===");
+        // Even though Car implements Comparable, we can OVERRIDE with lambda
+        cars.sort((c1, c2) -> Integer.compare(c1.carName.length(), c2.carName.length()));
+        cars.forEach(car -> System.out.println(car));
+    }
+}
+
+// === 1. NATURAL ORDERING (Comparable - by carName) ===
+// Hatchback (CNG)
+// SUV (Petrol)
+// Sedan (Diesel)
+
+// === 2. COMPARATOR via CLASS (by carType) ===
+// Hatchback (CNG)
+// Sedan (Diesel)
+// SUV (Petrol)
+
+// === 3. COMPARATOR via LAMBDA (by carType) ===
+// Hatchback (CNG)
+// Sedan (Diesel)
+// SUV (Petrol)
+
+// === 4. OVERRIDING Comparable with Lambda (by carName length) ===
+// SUV (Petrol)
+// Sedan (Diesel)
+// Hatchback (CNG)
