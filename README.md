@@ -4,10 +4,10 @@ I’ll be writing notes, adding examples, and summarizing key learnings for quic
 
 # 📘 Topics Covered
 • How Java Program Works & it's 3 Important Components (JVM, JRE, & JDK) <br/>
-• Classes in Java & Different Types of Inner Classes
-• Comparable & Comparator
-• Thread Synchronization Example
-• Designing a Blocking Queue Example
+• Classes in Java & Different Types of Inner Classes <br/>
+• Comparable & Comparator <br/>
+• Thread Synchronization Example <br/>
+• Designing a Blocking Queue Example <br/>
 
 🎯 Goal
 To build a strong understanding of Java programming by learning, practicing, and documenting along the way.
