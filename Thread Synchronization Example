@@ -1,0 +1,93 @@
+//Accessing common data & code through synchronization
+//Stacktop Example
+
+class Stack {
+    private int[] array;
+    private int stackTop;
+    Object lock;
+    public Stack(int capacity) {
+        array = new int[capacity];
+        stackTop = -1;
+        lock = new Object();
+    }
+    
+    
+    public boolean isEmpty() {
+        return stackTop < 0;
+    }
+    
+    public boolean isFull() {
+        return stackTop>=array.length-1;
+    }
+    
+    //push method
+    public synchronized boolean push(int element) {
+        if(isFull()) return false;
+        ++stackTop;
+        try{
+            Thread.sleep(1000);
+        } catch(Exception e) {};
+        
+        array[stackTop] = element;
+        return true;
+    }
+    
+    //pop method
+    public synchronized int pop() {
+        if(isEmpty()) return Integer.MIN_VALUE;
+        int obj = array[stackTop];
+        array[stackTop] = Integer.MIN_VALUE;
+        try{Thread.sleep(1000);}
+        catch(Exception e) {};
+        
+        stackTop--;
+        return obj;
+    }
+    
+}
+
+public class Main
+{
+	public static void main(String[] args) {
+		System.out.println("Main Thread is starting");
+		Stack stack = new Stack(10);
+		
+		new Thread(()->{
+		    int count = 0;
+		    while(++count<10) {
+		        System.out.println("Pushing the ele: "+stack.push(count));
+		    }
+		},"Pusher").start();
+		
+		new Thread(()->{
+		    int count = 0;
+		    while(++count<10) {
+		        System.out.println("Popping the ele: "+stack.pop());
+		    }
+		},"Popper").start();
+		System.out.println("Main is exiting");
+	}
+}
+
+// IMP: No Assumptions to be made about the order in which the code gets executed,
+// as it is very much platform dependent, & upon the mercy of JVM.
+// Main Thread is starting
+// Main is exiting
+// Pushing the ele: true
+// Popping the ele: 1
+// Pushing the ele: true
+// Popping the ele: 2
+// Pushing the ele: true
+// Popping the ele: 3
+// Pushing the ele: true
+// Popping the ele: 4
+// Pushing the ele: true
+// Popping the ele: 5
+// Pushing the ele: true
+// Popping the ele: 6
+// Pushing the ele: true
+// Popping the ele: 7
+// Pushing the ele: true
+// Popping the ele: 8
+// Pushing the ele: true
+// Popping the ele: 9
