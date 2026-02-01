@@ -8,6 +8,7 @@ I’ll be writing notes, adding examples, and summarizing key learnings for quic
 • Comparable & Comparator <br/>
 • Thread Synchronization Example <br/>
 • Designing a Blocking Queue Example <br/>
+• Singleton Patterns + Immutable Class <br/>
 
 🎯 Goal
 To build a strong understanding of Java programming by learning, practicing, and documenting along the way.
