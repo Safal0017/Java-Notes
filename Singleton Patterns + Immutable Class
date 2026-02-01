@@ -1,0 +1,173 @@
+// DEMO: 6 Singleton Patterns + Immutable Class w/ Defensive Copies
+
+//Different ways of creating Singleton class:
+// 1. Eager Initialization (gets loaded on program startup)
+// 2. Lazy Initialization (fails in multithreaded environment)
+// 3. Synchronized Block/Method  (very very slow)
+// 4. Double Check Lock (there is memory issue, resolved through volatile keyword)
+// 5. Bill Pugh Solution (rectified the issue of eager Initialization)
+// 6. Enum Singleton
+// (constructors are bydefault private & only one object of enum is created per JVM.)
+
+import java.util.*;
+
+// 1. Eager Initialization
+class EagerDB {
+    private static final EagerDB instance = new EagerDB();
+    private EagerDB() {}
+    public static EagerDB getInstance() { return instance; }
+}
+
+// 2. Lazy Initialization (NOT thread-safe - for demo only)
+class LazyDB {
+    private static LazyDB instance;
+    private LazyDB() {}
+    public static LazyDB getInstance() {
+        if (instance == null) instance = new LazyDB();
+        return instance;
+    }
+}
+
+// 3. Thread-Safe Synchronized Method
+class SyncDB {
+    private static SyncDB instance;
+    private SyncDB() {}
+    public synchronized static SyncDB getInstance() {
+        if (instance == null) instance = new SyncDB();
+        return instance;
+    }
+}
+
+// 4. Double-Checked Locking (with volatile for memory visibility)
+class DoubleCheckDB {
+    private static volatile DoubleCheckDB instance;
+    private DoubleCheckDB() {}
+    public static DoubleCheckDB getInstance() {
+        if (instance == null) {
+            synchronized (DoubleCheckDB.class) {
+                if (instance == null) {
+                    instance = new DoubleCheckDB();
+                }
+            }
+        }
+        return instance;
+    }
+}
+
+// 5. Bill Pugh (Initialization-on-demand holder idiom)
+class BillPughDB {
+    private BillPughDB() {}
+    private static class Holder {
+        private static final BillPughDB instance = new BillPughDB();
+    }
+    public static BillPughDB getInstance() {
+        return Holder.instance;
+    }
+}
+
+// 6. Enum Singleton (most concise & serialization-safe)
+enum EnumDB {
+    INSTANCE;
+    public void someMethod() {}  // Enum can have methods
+}
+
+/**
+ * IMMUTABLE CLASS RULES:
+ * 1. Declare class as 'final' (cannot be extended)
+ * 2. All fields private 
+ * 3. Fields initialized ONLY in constructor (final)
+ * 4. NO setter methods
+ * 5. Getter returns defensive COPY for mutable objects
+ * 6. Examples: String, Wrapper classes, LocalDate
+ */
+final class MyImmutableClass {
+    private final String name;
+    private final List<Object> petNameList;
+    
+    public MyImmutableClass(String name, List<Object> petNameList) {
+        this.name = name;
+        // Defensive copy in constructor
+        this.petNameList = new ArrayList<>(petNameList);
+    }
+    
+    public String getName() {
+        return name;
+    }
+    
+    public List<Object> getPetNameList() {
+        // Defensive copy - prevents external modification
+        return new ArrayList<>(petNameList);
+    }
+}
+
+
+public class Main {
+    public static void main(String[] args) {
+        System.out.println("=== Singleton Verification ===");
+        
+        // Test 1: Eager
+        EagerDB e1 = EagerDB.getInstance();
+        EagerDB e2 = EagerDB.getInstance();
+        verifySingleton(e1, e2, "Eager");
+        
+        // Test 2: Lazy
+        LazyDB l1 = LazyDB.getInstance();
+        LazyDB l2 = LazyDB.getInstance();
+        verifySingleton(l1, l2, "Lazy");
+        
+        // Test 3: Synchronized
+        SyncDB s1 = SyncDB.getInstance();
+        SyncDB s2 = SyncDB.getInstance();
+        verifySingleton(s1, s2, "Synchronized");
+        
+        // Test 4: Double-Check
+        DoubleCheckDB d1 = DoubleCheckDB.getInstance();
+        DoubleCheckDB d2 = DoubleCheckDB.getInstance();
+        verifySingleton(d1, d2, "Double-Check");
+        
+        // Test 5: Bill Pugh
+        BillPughDB b1 = BillPughDB.getInstance();
+        BillPughDB b2 = BillPughDB.getInstance();
+        verifySingleton(b1, b2, "Bill Pugh");
+        
+        // Test 6: Enum
+        EnumDB en1 = EnumDB.INSTANCE;
+        EnumDB en2 = EnumDB.INSTANCE;
+        verifySingleton(en1, en2, "Enum");
+        
+        System.out.println("All Singletons verified successfully!");
+        
+        System.out.println("IMMUTABLE Classes: ");
+        List<Object> petNames = new ArrayList<>();
+        petNames.add("cat");
+        petNames.add("dog");
+        
+        MyImmutableClass obj = new MyImmutableClass("Immutable-Classes", petNames);
+        
+        // Store EXTERNAL copy reference BEFORE modification
+        List<Object> externalCopy = obj.getPetNameList();
+        externalCopy.add("cow");  // Modifies EXTERNAL copy only
+        
+        System.out.println("Original (Immutable): " + obj.getPetNameList());  // [cat, dog]
+        System.out.println("External copy (modified): " + externalCopy);     // [cat, dog, cow]
+        
+    }
+    
+    private static void verifySingleton(Object o1, Object o2, String type) {
+        System.out.printf("%s: Same instance=%b, hashCodes match=%b%n", 
+            type, o1 == o2, o1.hashCode() == o2.hashCode());
+    }
+}
+
+//OUTPUT:
+// === Singleton Verification ===
+// Eager: Same instance=true, hashCodes match=true
+// Lazy: Same instance=true, hashCodes match=true
+// Synchronized: Same instance=true, hashCodes match=true
+// Double-Check: Same instance=true, hashCodes match=true
+// Bill Pugh: Same instance=true, hashCodes match=true
+// Enum: Same instance=true, hashCodes match=true
+// All Singletons verified successfully!
+// IMMUTABLE Classes: 
+// Original (Immutable): [cat, dog]
+// External copy (modified): [cat, dog, cow]
