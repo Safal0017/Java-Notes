@@ -1,0 +1,88 @@
+//Designing a Blocking Queue Example
+//Producer-Consumer Pattern
+//Transitioning between thread states
+
+import java.util.Queue;
+import java.util.LinkedList;
+
+class BlockingQueue {
+    private Queue<Integer> q;
+    private int capacity;
+    public BlockingQueue(int cap) {
+        q = new LinkedList<>();
+        capacity = cap;
+    }
+    
+    public boolean add(int item) {
+        synchronized(q) {
+            while(q.size()==capacity) {
+                try{
+                    q.wait();
+                } catch(Exception e){e.printStackTrace();}
+            }
+            
+            q.add(item);
+            q.notifyAll();
+            return true;
+        }
+    }
+    
+    public int remove() {
+        synchronized(q) {
+            while(q.size()==0) {
+                try{
+                    q.wait();
+                } catch(Exception e){e.printStackTrace();}
+            }
+            int ele = q.poll();
+            q.notifyAll();
+            return ele;
+        }
+    }
+};
+
+public class Main
+{
+	public static void main(String[] args) {
+		System.out.println("Main Thread is starting");
+		BlockingQueue queue = new BlockingQueue(10);
+		
+		new Thread(()->{
+		    int count = 0;
+		    while(++count<10) {
+		        System.out.println("Enque the ele: "+queue.add(count));
+		    }
+		},"Enqueing").start();
+		
+		new Thread(()->{
+		    int count = 0;
+		    while(++count<10) {
+		        System.out.println("Deque the ele: "+queue.remove());
+		    }
+		},"Dequeing").start();
+		System.out.println("Main is exiting");
+	}
+}
+
+// IMP: No Assumptions to be made about the order in which the code gets executed,
+// as it is very much platform dependent, & upon the mercy of JVM.
+// Main Thread is starting
+// Main is exiting
+// Enque the ele: true
+// Deque the ele: 1
+// Enque the ele: true
+// Deque the ele: 2
+// Enque the ele: true
+// Deque the ele: 3
+// Enque the ele: true
+// Deque the ele: 4
+// Enque the ele: true
+// Deque the ele: 5
+// Enque the ele: true
+// Deque the ele: 6
+// Enque the ele: true
+// Deque the ele: 7
+// Enque the ele: true
+// Deque the ele: 8
+// Enque the ele: true
+// Deque the ele: 9
