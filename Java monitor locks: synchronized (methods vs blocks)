@@ -1,0 +1,66 @@
+/**
+ * Demonstrates Java monitor locks: synchronized methods vs synchronized blocks
+ * t1 holds lock for 5s → t2 blocks → t3 runs freely
+ * 
+ * KEY: Single object `obj` = single lock. `synchronized` = mutual exclusion
+ * Mutual exclusion: Only one thread executes synchronized code on same object at a time
+ */
+
+import java.lang.*;
+
+class MonitorLockExample {
+    
+    public synchronized void task1() {
+        try{
+           System.out.println("Inside Task 1 (synchronized method) started ← t1 acquires lock");
+           Thread.sleep(5000);
+        }catch(Exception e) {
+            
+        }
+        
+        System.out.println("Task 1 (synchronized method) finished  ← t1 releases lock");
+    }
+    
+    public void task2() {
+        System.out.println("Task 2 method (with synchronized block) started ← t2 starts but BLOCKS");
+        synchronized(this) {
+            System.out.println("Task 2 inside synchronized block ← t2 finally enters critical section");
+        }
+    }
+    
+    public void task3() {
+        System.out.println("Task3 Non-Synchronized Method ← t3 runs freely (no lock)");
+    }
+    
+}
+
+public class Main
+{
+	public static void main(String[] args) {
+		System.out.println("Main method started");
+		
+		MonitorLockExample obj = new MonitorLockExample();
+		
+		Thread t1 = new Thread(()->obj.task1());
+		Thread t2 = new Thread(()->obj.task2());
+		Thread t3 = new Thread(()->obj.task3());
+		
+		t1.start();
+		t2.start();
+		t3.start();
+		
+		System.out.println("Main method finished");
+		
+	}
+}
+
+/**
+OUTPUT:
+Main method started
+Inside Task 1 (synchronized method) started ← t1 acquires lock
+Task 2 method (with synchronized block) started ← t2 starts but BLOCKS
+Main method finished
+Task3 Non-Synchronized Method ← t3 runs freely (no lock)
+Task 1 (synchronized method) finished  ← t1 releases lock
+Task 2 inside synchronized block ← t2 finally enters critical section
+*/
