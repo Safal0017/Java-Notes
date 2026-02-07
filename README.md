@@ -6,6 +6,7 @@ I’ll be writing notes, adding examples, and summarizing key learnings for quic
 • How Java Program Works & it's 3 Important Components (JVM, JRE, & JDK) <br/>
 • Classes in Java & Different Types of Inner Classes <br/>
 • Comparable & Comparator <br/>
+• Java monitor locks: synchronized (methods vs blocks) <br/>
 • Thread Synchronization Example <br/>
 • Designing a Blocking Queue Example <br/>
 • Singleton Patterns + Immutable Class <br/>
