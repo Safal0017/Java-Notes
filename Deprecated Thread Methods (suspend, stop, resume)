@@ -1,0 +1,84 @@
+/**
+ * DANGER ZONE: Why Thread.suspend()/resume()/stop() are DEPRECATED (Java 1.2+)
+ * DEADLOCK RISK: Thread holds lock → suspend() → NEVER releases → Other threads BLOCK FOREVER
+ * Modern fix: wait()/notify() or volatile flags
+ * 
+ * Uncomment suspend()/stop() lines below to see DISASTER in action!
+ */
+
+import java.util.*;
+
+class SharedResource {
+    boolean itemAvailable = false;
+    
+    public synchronized void produce() {
+        System.out.println("🔒 Lock ACQUIRED by: "+Thread.currentThread().getName());
+        try{
+            Thread.sleep(8000);  // Holds lock 8s - simulates work
+        }catch(Exception e) {}
+        
+        itemAvailable = true;
+        System.out.println("🔓 Lock RELEASED by: "+Thread.currentThread().getName());
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        SharedResource resource = new SharedResource();
+        
+        System.out.println("Main thread Started");
+        
+        Thread th1 = new Thread(()->{
+            System.out.println("Thread1 calling produce()");
+            resource.produce();  // ← th1 acquires lock
+        }, "Thread-1");
+        
+        Thread th2 = new Thread(()->{
+            try{ Thread.sleep(1000); }catch(Exception e) {}  // th2 delays 1s
+            System.out.println("Thread2 calling produce()");
+            resource.produce();  // ← BLOCKS waiting for th1
+        }, "Thread-2");
+        
+        th1.start();
+        th2.start();
+        
+        try { Thread.sleep(3000); } catch(Exception e) {}  // Wait 3s
+        
+        // 🔥 DISASTER EXAMPLES - UNCOMMENT ONE AT A TIME:
+        
+        // 1️⃣ suspend(): HOLDS LOCK → DEADLOCK (never releases)
+        // System.out.println("⚠️  th1.suspend() → DEADLOCK!");
+        // th1.suspend();
+        
+        // 2️⃣ stop(): IMMEDIATE DEATH → DEADLOCK (no cleanup)
+        // System.out.println("💀 th1.stop() → IMMEDIATE DEADLOCK!");
+        // th1.stop();
+        
+        // 3️⃣ resume(): Only works AFTER suspend() - still DANGEROUS
+        // th1.resume(); // Won't work without suspend() first
+        
+        System.out.println("Main finished - Normal execution (no deadlock)");
+    }
+}
+
+/**
+DEPRECATED (Since JAVA 1.2)
+DEPRECATION REASONS:
+🔴 suspend(): Thread holds locks → Never releases → DEADLOCK
+🔴 stop(): No cleanup → Locks held + resources leak → DEADLOCK  
+🔴 resume(): Unreliable (depends on suspend timing)
+✅ Modern: wait()/notify(), volatile flags, ExecutorService
+*/
+
+
+/**
+OUTPUT:
+Main thread Started
+Thread1 calling produce()
+🔒 Lock ACQUIRED by: Thread-1
+Thread2 calling produce()
+Main finished - Normal execution (no deadlock)
+🔓 Lock RELEASED by: Thread-1
+🔒 Lock ACQUIRED by: Thread-2
+🔓 Lock RELEASED by: Thread-2
+ */
