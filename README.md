@@ -10,6 +10,8 @@ I’ll be writing notes, adding examples, and summarizing key learnings for quic
 • Producer-Consumer Wait & Notify (MultithreadingDemo) <br/>
 • Deprecated Thread Methods (suspend, stop, resume) <br/>
 • Thread.join() + Daemon Demo <br/>
+• ReentrantLock (Explicit Lock Object) <br/>
+• ReadWriteLockDemo (Shared Lock vs Exclusive Lock) <br/>
 • Thread Synchronization Example (Stack) <br/>
 • Designing a Blocking Queue Example <br/>
 • Singleton Patterns + Immutable Class <br/>
