@@ -1,0 +1,100 @@
+/**
+* StampedLock (introduced in Java 8) is a capability-based lock that supports three modes for 
+* controlling concurrent access: write, read, and optimistic read. 
+* It is designed for high-performance scenarios, especially when reads significantly outnumber writes.
+
+Unlike ReentrantReadWriteLock, it is not reentrant and 
+provides optimistic locking, which can greatly improve throughput in read-heavy workloads.
+
+Locking Modes:
+
+1. Write Lock (writeLock) – Exclusive access; blocks all readers and writers.
+
+2. Read Lock (readLock) – Shared access; multiple readers allowed, but blocks writers.
+
+3. Optimistic Read (tryOptimisticRead) – Non-blocking read that may be invalidated by a writer; must be validated using validate(stamp).
+
+=> Implementing ReadWriteLock Functionality Using StampedLock,
+ */
+
+import java.util.*;
+import java.util.concurrent.locks.StampedLock;
+
+class SharedResource {
+    boolean flag = false;
+    StampedLock lock = new StampedLock();
+    
+    public void ReadOperation() {
+        long stamp = lock.readLock();
+        //readLock for reading-only, No Mutations to be performed
+        try{
+            System.out.println("🔒 Lock ACQUIRED by: "+Thread.currentThread().getName());
+            Thread.sleep(6000);
+        }catch(Exception e) {}
+        finally {
+            System.out.println("🔓 Lock RELEASED by: "+Thread.currentThread().getName());
+            lock.unlockRead(stamp);  // GUARANTEED release
+        }
+    }
+    
+    public void WriteOperation() {
+        long stamp = lock.writeLock();  
+        try{
+            System.out.println("🔒 Lock ACQUIRED by: "+Thread.currentThread().getName());
+            flag = true; //writeLock for mutations
+        }catch(Exception e) {}
+        finally {
+            System.out.println("🔓 Lock RELEASED by: "+Thread.currentThread().getName());
+            lock.unlockWrite(stamp); // GUARANTEED release
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        SharedResource resource = new SharedResource();
+        
+        System.out.println("Main thread Started");
+        
+        Thread th1 = new Thread(()->{
+            System.out.println("Thread1 calling ReadOperation method (Read Lock)");
+            resource.ReadOperation();  
+        }, "Thread-1");
+        
+        Thread th2 = new Thread(()->{
+            System.out.println("Thread2 calling ReadOperation method (Read Lock)");
+            resource.ReadOperation();  
+        }, "Thread-2");
+        
+        Thread th3 = new Thread(()->{
+            System.out.println("Thread3 calling WriteOperation method (Write Lock)");
+            resource.WriteOperation();  
+        }, "Thread-3");
+        
+        //No Assumptions to be made about the order of execution of threads th1 & th2
+        // as it is very much dependent at the mercy of JVM,
+        th1.start();
+        th2.start();
+        th3.start();
+        
+        System.out.println("Main finished");
+    }
+}
+
+
+
+
+/**
+OUTPUT:
+Main thread Started
+Thread1 calling ReadOperation method (Read Lock)
+Thread2 calling ReadOperation method (Read Lock)
+Main finished
+Thread3 calling WriteOperation method (Write Lock)
+🔒 Lock ACQUIRED by: Thread-1
+🔒 Lock ACQUIRED by: Thread-2
+🔓 Lock RELEASED by: Thread-1
+🔓 Lock RELEASED by: Thread-2
+🔒 Lock ACQUIRED by: Thread-3
+🔓 Lock RELEASED by: Thread-3
+ */
