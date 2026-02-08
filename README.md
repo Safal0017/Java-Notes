@@ -15,8 +15,8 @@ I’ll be writing notes, adding examples, and summarizing key learnings for quic
 • Thread.join() + Daemon Demo <br/>
 • ReentrantLock (Explicit Lock Object) <br/>
 • ReadWriteLockDemo (Shared Lock vs Exclusive Lock) <br/>
-• ReadWriteLock functionality using StampedLock
-• (Optimistic vs Pessimistic) Read & Write Lock functionality using StampedLock 
+• ReadWriteLock functionality using StampedLock <br/>
+• (Optimistic vs Pessimistic) Read & Write Lock functionality using StampedLock <br/>
 <br/>
 • Thread Synchronization Example (Stack) <br/>
 • Designing a Blocking Queue Example <br/>
