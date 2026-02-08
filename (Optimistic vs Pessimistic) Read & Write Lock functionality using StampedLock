@@ -1,0 +1,204 @@
+/**
+* StampedLock (introduced in Java 8) is a capability-based lock that supports three modes for 
+* controlling concurrent access: write, read, and optimistic read. 
+* It is designed for high-performance scenarios, especially when reads significantly outnumber writes.
+
+Unlike ReentrantReadWriteLock, it is not reentrant and 
+provides optimistic locking, which can greatly improve throughput in read-heavy workloads.
+
+Locking Modes:
+
+1. Optimistic read: A fast, non-blocking read path that does not acquire a lock; 
+    it relies on a subsequent validation to ensure no writer intervened, 
+    otherwise the operation may be retried.
+
+2. Pessimistic read (readLock): A shared lock that lets multiple readers proceed 
+    but blocks writers until all readers release the lock.
+
+3. Write lock (writeLock): An exclusive lock that prevents other readers and writers 
+    from entering, used for mutating shared state.
+
+In short:
+
+1. Optimistic read: non-blocking read with validation.
+
+2. Pessimistic read: shared read lock that blocks writers.
+
+3. Write lock: exclusive mutation lock.
+
+=> Performing Optimistic Read, Pessimistic Read & Write Lock functionality using StampedLock,
+ */
+
+import java.util.concurrent.locks.StampedLock;
+import java.util.concurrent.TimeUnit;
+
+class SharedResource {
+    private int value = 10;
+    private final StampedLock lock = new StampedLock();
+    
+    public void producer() {
+        // STEP 1: Try optimistic read first (fast path)
+        long stamp = lock.tryOptimisticRead();
+        
+        // STEP 2: Read current value optimistically
+        int currentValue = value;
+        System.out.println("📖 Producer optimistic read: " + currentValue + 
+                          " by " + Thread.currentThread().getName());
+        
+        // STEP 3: Validate optimistic read
+        if (!lock.validate(stamp)) {
+            System.out.println("⚠️  Optimistic read invalidated, retrying with pessimistic lock");
+            // FALLBACK: Use read lock for consistency
+            stamp = lock.readLock();
+            try {
+                currentValue = value;
+                System.out.println("🔒 Producer read lock fallback: " + currentValue);
+            } finally {
+                lock.unlockRead(stamp);
+                stamp = 0;
+            }
+        }
+        
+        // STEP 4: Decide to update (business logic: increment if < 20)
+        if (currentValue < 20) {
+            // STEP 5: Upgrade to write lock for mutation
+            stamp = lock.tryConvertToWriteLock(stamp);
+            if (stamp == 0L) {
+                System.out.println("🔄 Upgrade failed, acquiring write lock directly");
+                stamp = lock.writeLock();
+                try {
+                    value = currentValue + 1;
+                    System.out.println("✅ Producer SUCCESS: Updated value to " + value);
+                    return;
+                } finally {
+                    lock.unlockWrite(stamp);
+                }
+            } else {
+                // Successfully upgraded optimistic/read to write
+                value = currentValue + 1;
+                System.out.println("✅ Producer UPGRADED: Updated value to " + value);
+                lock.unlockWrite(stamp);
+            }
+        } else {
+            System.out.println("⏭️  Producer: No update needed (value=" + currentValue + ")");
+        }
+    }
+    
+    public void consumer() {
+        long stamp = lock.writeLock();
+        try {
+            System.out.println("🔒 Consumer WRITE acquired by: " + Thread.currentThread().getName());
+            value = 5;  // Consumer resets value
+            System.out.println("🔄 Consumer updated value to: " + value);
+            // Simulate work
+            try { Thread.sleep(100); } catch (Exception e) {}
+        } finally {
+            System.out.println("🔓 Consumer WRITE released");
+            lock.unlockWrite(stamp);
+        }
+    }
+    
+    public int getValue() {
+        long stamp = lock.tryOptimisticRead();
+        int val = value;
+        if (!lock.validate(stamp)) {
+            stamp = lock.readLock();
+            try {
+                val = value;
+            } finally {
+                lock.unlockRead(stamp);
+            }
+        }
+        return val;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) throws InterruptedException {
+        SharedResource resource = new SharedResource();
+        
+        Thread producer = new Thread(() -> {
+            for (int i = 0; i < 2; i++) {
+                System.out.println("\n--- Producer iteration " + (i+1) + " ---");
+                resource.producer();
+                try { Thread.sleep(200); } catch (Exception e) {}
+            }
+        }, "Producer");
+        
+        Thread consumer = new Thread(() -> {
+            for (int i = 0; i < 2; i++) {
+                try { Thread.sleep(150); } catch (Exception e) {}
+                System.out.println("\n--- Consumer iteration " + (i+1) + " ---");
+                resource.consumer();
+            }
+        }, "Consumer");
+        
+        consumer.start();
+        producer.start();
+        
+        consumer.join();
+        producer.join();
+        System.out.println("\nFinal value: " + resource.getValue());
+    }
+}
+
+
+
+
+
+/**
+OUTPUT:
+
+--- Producer iteration 1 ---
+📖 Producer optimistic read: 10 by Producer
+✅ Producer UPGRADED: Updated value to 11
+
+--- Consumer iteration 1 ---
+🔒 Consumer WRITE acquired by: Consumer
+🔄 Consumer updated value to: 5
+
+--- Producer iteration 2 ---
+📖 Producer optimistic read: 5 by Producer
+⚠️  Optimistic read invalidated, retrying with pessimistic lock
+🔓 Consumer WRITE released
+🔒 Producer read lock fallback: 5
+🔄 Upgrade failed, acquiring write lock directly
+✅ Producer SUCCESS: Updated value to 6
+
+--- Consumer iteration 2 ---
+🔒 Consumer WRITE acquired by: Consumer
+🔄 Consumer updated value to: 5
+🔓 Consumer WRITE released
+
+Final value: 5
+
+ */
+ 
+/** 
+Key Correct Usage Patterns Demonstrated:
+
+1. Optimistic Read → Validate → Upgrade Path
+
+    Fast optimistic read first
+    
+    Validate before any business decisions
+    
+    Upgrade to write lock only when mutation needed
+
+2. Fallback Strategy
+
+    If optimistic fails → pessimistic read lock
+    
+    If upgrade fails → direct write lock
+
+3. No Mutation Under Optimistic Read
+
+    Read-only under optimistic stamp
+    
+    Mutation only under confirmed write lock
+
+4. Producer Logic Encapsulated
+
+    Read → Decide → (if needed) Write atomically
+
+*/
