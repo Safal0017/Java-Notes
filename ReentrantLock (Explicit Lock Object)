@@ -1,0 +1,68 @@
+/**
+ * ReentrantLock: EXPLICIT Lock Object vs synchronized(this)
+ * Key Insight: synchronized(this) = per-object locks | ReentrantLock = programmer-controlled lock scope
+ * SAME lock = mutual exclusion ACROSS different objects | More flexible than synchronized
+ * try-finally ensures unlock() - DEADLOCK-PROOF unlike suspend()
+ */
+
+import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
+
+class SharedResource {
+    boolean itemAvailable = false;
+    
+    public void produce(ReentrantLock lock) {
+        lock.lock();  // Explicit lock - works across ANY objects
+        try{
+            System.out.println("🔒 Lock ACQUIRED by: "+Thread.currentThread().getName());
+            itemAvailable = true;
+            Thread.sleep(8000);
+        }catch(Exception e) {}
+        finally {
+            System.out.println("🔓 Lock RELEASED by: "+Thread.currentThread().getName());
+            lock.unlock();  // GUARANTEED release
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        SharedResource resource1 = new SharedResource();
+        SharedResource resource2 = new SharedResource();  // DIFFERENT objects
+        
+        ReentrantLock sharedLock = new ReentrantLock();  // SINGLE lock instance
+        
+        System.out.println("Main thread Started");
+        
+        Thread th1 = new Thread(()->{
+            System.out.println("Thread1: resource1.produce(sharedLock)");
+            resource1.produce(sharedLock);  // ← SAME lock
+        }, "Thread-1");
+        
+        Thread th2 = new Thread(()->{
+            System.out.println("Thread2: resource2.produce(sharedLock)");
+            resource2.produce(sharedLock);  // ← BLOCKS despite different object
+        }, "Thread-2");
+        
+        //No Assumptions to be made about the order of execution of threads th1 & th2
+        // as it is very much dependent at the mercy of JVM,
+        th1.start();
+        th2.start();
+        System.out.println("Main finished");
+    }
+}
+
+
+
+
+/**
+OUTPUT:
+Main thread Started
+Main finished
+Thread2: resource2.produce(sharedLock)
+Thread1: resource1.produce(sharedLock)
+🔒 Lock ACQUIRED by: Thread-2
+🔓 Lock RELEASED by: Thread-2
+🔒 Lock ACQUIRED by: Thread-1
+🔓 Lock RELEASED by: Thread-1
+ */
