@@ -1,0 +1,70 @@
+/**
+ * Producer-Consumer with wait()/notifyAll(): Classic Java monitor pattern
+ * Consumer WAITS 5s → Producer signals → Consumer CONSUMES immediately
+ * KEY: wait() releases lock + waits for notifyAll(); notifyAll() wakes waiters
+ */
+
+import java.lang.*;
+
+class SharedResource {
+    boolean itemAvailable = false;
+    
+    // Producer: Sets flag + signals ALL waiting consumers
+    public synchronized void addItem() {
+        itemAvailable = true;
+        System.out.println("Item Added by: "+Thread.currentThread().getName()+" ← Producer signals notifyAll()");
+        notifyAll();  // Wakes consumer from wait()
+    }
+    
+    // Consumer: Waits until item available, then consumes
+    public synchronized void consumeItem() {
+        System.out.println("ConsumeItem invoked by: "+Thread.currentThread().getName()+" ← Consumer checks flag");
+        while(!itemAvailable) {  // Spins until producer adds item
+            try{
+                System.out.println("Thread "+Thread.currentThread().getName()+" calls wait() ← Releases lock + waits");
+                wait();  // Releases 'this' lock + thread waits indefinitely
+            } catch(Exception e) {}
+        }
+        
+        System.out.println("Item consumed by: "+Thread.currentThread().getName()+" ← flag=false");
+        itemAvailable = false;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        System.out.println("Main method started");
+        
+        SharedResource resource = new SharedResource();
+        
+        Thread producerThread = new Thread(()->{
+            try{
+               System.out.println("Producer starts: "+Thread.currentThread().getName()+" ← Sleeps 5s");
+               Thread.sleep(5000);  // Delays signal
+            }catch(Exception e) {}
+            resource.addItem();  // ← CRITICAL: Signals waiting consumer
+        }, "ProducerThread");
+        
+        Thread consumerThread = new Thread(()->{
+            System.out.println("Consumer starts: "+Thread.currentThread().getName()+" ← Immediately tries to consume");
+            resource.consumeItem();
+        }, "ConsumerThread");
+        
+        producerThread.start();
+        consumerThread.start();
+        
+        System.out.println("Main method finished");
+    }
+}
+
+/**
+OUTPUT:
+Main method started
+Main method finished
+Producer starts: ProducerThread ← Sleeps 5s
+Consumer starts: ConsumerThread ← Immediately tries to consume
+ConsumeItem invoked by: ConsumerThread ← Consumer checks flag
+Thread ConsumerThread calls wait() ← Releases lock + waits
+Item Added by: ProducerThread ← Producer signals notifyAll()
+Item consumed by: ConsumerThread ← flag=false
+*/
