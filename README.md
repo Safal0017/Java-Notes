@@ -4,17 +4,23 @@ I’ll be writing notes, adding examples, and summarizing key learnings for quic
 
 # 📘 Topics Covered
 • How Java Program Works & it's 3 Important Components (JVM, JRE, & JDK) <br/>
+<br/>
 • Classes in Java & Different Types of Inner Classes <br/>
+<br/>
 • Comparable & Comparator <br/>
+<br/>
 • Java monitor locks: synchronized (methods vs blocks) <br/>
 • Producer-Consumer Wait & Notify (MultithreadingDemo) <br/>
 • Deprecated Thread Methods (suspend, stop, resume) <br/>
 • Thread.join() + Daemon Demo <br/>
 • ReentrantLock (Explicit Lock Object) <br/>
 • ReadWriteLockDemo (Shared Lock vs Exclusive Lock) <br/>
+• ReadWriteLock functionality using StampedLock
+• (Optimistic vs Pessimistic) Read & Write Lock functionality using StampedLock 
+<br/>
 • Thread Synchronization Example (Stack) <br/>
 • Designing a Blocking Queue Example <br/>
 • Singleton Patterns + Immutable Class <br/>
-
+<br/>
 🎯 Goal
 To build a strong understanding of Java programming by learning, practicing, and documenting along the way.
