@@ -9,6 +9,7 @@ I’ll be writing notes, adding examples, and summarizing key learnings for quic
 • Java monitor locks: synchronized (methods vs blocks) <br/>
 • Producer-Consumer Wait & Notify (MultithreadingDemo) <br/>
 • Deprecated Thread Methods (suspend, stop, resume) <br/>
+• Thread.join() + Daemon Demo <br/>
 • Thread Synchronization Example (Stack) <br/>
 • Designing a Blocking Queue Example <br/>
 • Singleton Patterns + Immutable Class <br/>
