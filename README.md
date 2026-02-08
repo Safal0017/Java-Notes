@@ -7,7 +7,8 @@ I’ll be writing notes, adding examples, and summarizing key learnings for quic
 • Classes in Java & Different Types of Inner Classes <br/>
 • Comparable & Comparator <br/>
 • Java monitor locks: synchronized (methods vs blocks) <br/>
-• Thread Synchronization Example <br/>
+• Producer-Consumer Wait & Notify (MultithreadingDemo) <br/>
+• Thread Synchronization Example (Stack) <br/>
 • Designing a Blocking Queue Example <br/>
 • Singleton Patterns + Immutable Class <br/>
 
