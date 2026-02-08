@@ -1,0 +1,66 @@
+/**
+ * Thread.join() + Daemon Demo: Main WAITS for th1 → th2 runs in background
+ * join(): "Wait for thread to finish" | Daemon: "Dies when main exits"
+ * KEY: th1 holds lock 8s → th2 blocks → main waits → perfect lock contention demo
+ */
+
+import java.util.*;
+
+class SharedResource {
+    boolean itemAvailable = false;
+    
+    public synchronized void produce() {
+        System.out.println("🔒 Lock ACQUIRED by: "+Thread.currentThread().getName());
+        try{
+            Thread.sleep(8000);  // Holds lock 8s - simulates work
+        }catch(Exception e) {}
+        
+        itemAvailable = true;
+        System.out.println("🔓 Lock RELEASED by: "+Thread.currentThread().getName());
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        SharedResource resource = new SharedResource();
+        
+        System.out.println("Main thread Started");
+        
+        Thread th1 = new Thread(()->{
+            System.out.println("Thread1 calling produce()");
+            resource.produce();  // ← th1 acquires lock FIRST
+        }, "Thread-1");
+        
+        Thread th2 = new Thread(()->{
+            System.out.println("Thread2 calling produce() ← BLOCKS behind th1");
+            resource.produce();  // ← WAITS for th1's lock
+        }, "Thread-2");
+        
+        // Daemon: th2 dies if main exits first
+        th2.setDaemon(true);  
+        
+        th1.start();
+        th2.start();
+        
+        try{
+            System.out.println("Main WAITS for th1: th1.join()");
+            th1.join();  // Main blocks until th1 finishes
+        } catch(Exception e) {}
+        
+        System.out.println("Main finished - th1 complete, th2 done");
+    }
+}
+
+
+
+/**
+OUTPUT:
+Main thread Started
+Thread1 calling produce()
+Main WAITS for th1: th1.join()
+Thread2 calling produce() ← BLOCKS behind th1
+🔒 Lock ACQUIRED by: Thread-1
+🔓 Lock RELEASED by: Thread-1
+🔒 Lock ACQUIRED by: Thread-2
+Main finished - th1 complete, th2 done
+ */
