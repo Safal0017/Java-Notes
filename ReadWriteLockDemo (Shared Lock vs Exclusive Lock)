@@ -1,0 +1,88 @@
+/**
+ * ReadLock: More than 1 thread can acquire the read lock (Same as Shared lock)
+ * WriteLock: Only 1 thread can acquire the write lock (Same as Exclusive lock)
+ * Demonstrates ReadWriteLock: multiple readers can acquire readLock concurrently; 
+ * writer obtains writeLock exclusively.
+ */
+
+import java.util.*;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+class SharedResource {
+    boolean flag = false;
+    
+    public void ReadOperation(ReentrantReadWriteLock lock) {
+        lock.readLock().lock();  
+        //readLock for reading-only, No Mutations to be performed
+        try{
+            System.out.println("🔒 Lock ACQUIRED by: "+Thread.currentThread().getName());
+            Thread.sleep(8000);
+        }catch(Exception e) {}
+        finally {
+            System.out.println("🔓 Lock RELEASED by: "+Thread.currentThread().getName());
+            lock.readLock().unlock();  // GUARANTEED release
+        }
+    }
+    
+    public void WriteOperation(ReentrantReadWriteLock lock) {
+        lock.writeLock().lock();  
+        try{
+            System.out.println("🔒 Lock ACQUIRED by: "+Thread.currentThread().getName());
+            flag = true; //writeLock for mutations
+        }catch(Exception e) {}
+        finally {
+            System.out.println("🔓 Lock RELEASED by: "+Thread.currentThread().getName());
+            lock.writeLock().unlock();  // GUARANTEED release
+        }
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        SharedResource resource = new SharedResource();
+        
+        ReentrantReadWriteLock rwlock = new ReentrantReadWriteLock();
+        
+        System.out.println("Main thread Started");
+        
+        Thread th1 = new Thread(()->{
+            System.out.println("Thread1 calling ReadOperation method (Read Lock)");
+            resource.ReadOperation(rwlock);  
+        }, "Thread-1");
+        
+        Thread th2 = new Thread(()->{
+            System.out.println("Thread2 calling ReadOperation method (Read Lock)");
+            resource.ReadOperation(rwlock);  
+        }, "Thread-2");
+        
+        Thread th3 = new Thread(()->{
+            System.out.println("Thread3 calling WriteOperation method (Write Lock)");
+            resource.WriteOperation(rwlock);  
+        }, "Thread-3");
+        
+        //No Assumptions to be made about the order of execution of threads th1 & th2
+        // as it is very much dependent at the mercy of JVM,
+        th1.start();
+        th2.start();
+        th3.start();
+        System.out.println("Main finished");
+    }
+}
+
+
+
+
+/**
+OUTPUT:
+Main thread Started
+Thread1 calling ReadOperation method (Read Lock)
+Thread2 calling ReadOperation method (Read Lock)
+Main finished
+Thread3 calling WriteOperation method (Write Lock)
+🔒 Lock ACQUIRED by: Thread-1
+🔒 Lock ACQUIRED by: Thread-2
+🔓 Lock RELEASED by: Thread-1
+🔓 Lock RELEASED by: Thread-2
+🔒 Lock ACQUIRED by: Thread-3
+🔓 Lock RELEASED by: Thread-3
+ */
