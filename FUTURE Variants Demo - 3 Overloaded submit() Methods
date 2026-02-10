@@ -1,0 +1,96 @@
+/**
+ * =============================================================================
+ * FUTURE Variants Demo - 3 Overloaded submit() Methods
+ * =============================================================================
+ * 
+ * THREADPOOL SUBMIT() OVERLOADS:
+ * 1. submit(Runnable)           → Future<?> (void return)
+ * 2. submit(Runnable, T result) → Future<T>  (pass result object)
+ * 3. submit(Callable<T>)       → Future<T>  (Callable returns value)
+ * 
+ * RUNNABLE vs CALLABLE:
+ * | Feature       | Runnable     | Callable        |
+ * |---------------|--------------|-----------------|
+ * | Return Type   | void         | T (generic)     |
+ * | Exceptions    | No           | Yes (checked)   |
+ * | Use Case      | Fire-forget  | Result needed   |
+ * 
+ * KEY CONCEPT: Future wraps async result regardless of task type
+ * =============================================================================
+ */
+
+import java.util.concurrent.*;
+import java.util.*;
+
+//FutureVariantsDemo
+public class Main {
+    public static void main(String[] args) throws Exception {
+        ThreadPoolExecutor poolExecutor = new ThreadPoolExecutor(
+            3, 3, 1, TimeUnit.HOURS,
+            new ArrayBlockingQueue<>(10),
+            Executors.defaultThreadFactory(),
+            new ThreadPoolExecutor.AbortPolicy()
+        );
+
+        System.out.println("🚀 Starting 3 Future variants...\n");
+
+        // ═══════════════════════════════════════════════════════════════════════════
+        // USE CASE 1: submit(Runnable) → Future<?> (VOID return)
+        // ═══════════════════════════════════════════════════════════════════════════
+        Future<?> future1 = poolExecutor.submit(() -> {
+            System.out.println("📤 [1] Runnable Task (void) - " + Thread.currentThread().getName());
+            try { Thread.sleep(1000); } catch (Exception e) {}
+            System.out.println("✅ [1] Runnable Task COMPLETE");
+        });
+        
+        System.out.println("⏳ [1] isDone: " + future1.isDone());
+        future1.get();  // Wait for completion
+        System.out.println("🏁 [1] Future<?> result: " + (future1.get() == null ? "null (void)" : "value"));
+
+        // ═══════════════════════════════════════════════════════════════════════════
+        // USE CASE 2: submit(Runnable, T result) → Future<T> (shared object)
+        // ═══════════════════════════════════════════════════════════════════════════════════════════
+        List<Integer> sharedResult = new ArrayList<>();
+        Future<List<Integer>> future2 = poolExecutor.submit(() -> {
+            System.out.println("📤 [2] Runnable + Result - " + Thread.currentThread().getName());
+            sharedResult.add(100);
+            System.out.println("✅ [2] Runnable populated shared list");
+        }, sharedResult);
+        
+        List<Integer> result2 = future2.get();
+        System.out.println("🏁 [2] Future<List> result: " + result2.get(0));
+
+        // ═══════════════════════════════════════════════════════════════════════════
+        // USE CASE 3: submit(Callable<T>) → Future<T> (direct return)
+        // ═══════════════════════════════════════════════════════════════════════════
+        Future<List<Integer>> future3 = poolExecutor.submit(() -> {
+            System.out.println("📤 [3] Callable Task - " + Thread.currentThread().getName());
+            List<Integer> listObj = new ArrayList<>();
+            listObj.add(200);
+            return listObj;  // Callable RETURNS value
+        });
+        
+        List<Integer> result3 = future3.get();
+        System.out.println("🏁 [3] Future<List> result: " + result3.get(0));
+
+        poolExecutor.shutdown();
+        System.out.println("\n🎉 All 3 variants completed!");
+    }
+}
+
+/**
+ * OUTPUT:
+     🚀 Starting 3 Future variants...
+    
+    ⏳ [1] isDone: false
+    📤 [1] Runnable Task (void) - pool-1-thread-1
+    ✅ [1] Runnable Task COMPLETE
+    🏁 [1] Future<?> result: null (void)
+    📤 [2] Runnable + Result - pool-1-thread-2
+    ✅ [2] Runnable populated shared list
+    🏁 [2] Future<List> result: 100
+    📤 [3] Callable Task - pool-1-thread-3
+    🏁 [3] Future<List> result: 200
+    
+    🎉 All 3 variants completed!
+*/
