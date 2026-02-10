@@ -17,6 +17,7 @@ I’ll be writing notes, adding examples, and summarizing key learnings for quic
 • ReadWriteLockDemo (Shared Lock vs Exclusive Lock) <br/>
 • ReadWriteLock functionality using StampedLock <br/>
 • (Optimistic vs Pessimistic) Read & Write Lock functionality using StampedLock <br/>
+• Lock-Free Concurrency Alternative (ATOMIC vs VOLATILE) <br/>
 <br/>
 • Thread Synchronization Example (Stack) <br/>
 • Designing a Blocking Queue Example <br/>
