@@ -3,6 +3,21 @@
  * Key Insight: synchronized(this) = per-object locks | ReentrantLock = programmer-controlled lock scope
  * SAME lock = mutual exclusion ACROSS different objects | More flexible than synchronized
  * try-finally ensures unlock() - DEADLOCK-PROOF unlike suspend()
+
+ * ReentrantLock:
+    is a class in Java that provides a more flexible and powerful mechanism for thread synchronization compared to the traditional synchronized keyword. 
+    It is part of the java.util.concurrent.locks package and implements the Lock interface.
+
+ * Key Features
+
+    ReentrantLock allows a thread to acquire the same lock multiple times without causing a deadlock. 
+    When a thread acquires the lock for the first time, a hold count is set to one. 
+    Each subsequent acquisition increments the hold count by one, and each release decrements it by one. 
+    The lock is fully released when the hold count reaches zero.
+    
+    ReentrantLock also supports a fairness parameter, which ensures that the longest-waiting thread gets the lock next. 
+    This can help prevent thread starvation but may reduce overall throughput.
+
  */
 
 import java.util.*;
