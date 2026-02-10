@@ -1,0 +1,191 @@
+/**
+ * =============================================================================
+ * ThreadPoolExecutor Demo - Core Concepts & Custom Components
+ * =============================================================================
+ * 
+ * What is ThreadPool?
+ * It's collection of threads (aka workers), which are available to perform the submitted tasks.
+ * Once task completed, worker thread get back to ThreadPool and wait for new task to assigned.
+ * Means threads can be reused.
+ * 
+ * Advantages of ThreadPool:
+ * Thread Creation time can be saved.
+ * Overhead of managing the Thread lifecycle can be removed.
+ * Increased the performance. (less context switching as threads are reused).
+ * 
+ * THREAD POOL BEHAVIOR:
+ * CorePoolSize=2: 2 threads always alive
+ * MaximumPoolSize=5: Up to 5 threads under load  
+ * Queue=10: Tasks wait in ArrayBlockingQueue
+ * KeepAlive=1hr: Excess threads live 1hr after idle
+ * Total capacity: 2(core) + 10(queue) + 3(extra) = 15 tasks
+ * 
+ * EXECUTION FLOW (25 tasks):
+ * 1. First 2 tasks → core threads start immediately
+ * 2. Tasks 3-12 → queue (10 slots)
+ * 3. Tasks 13-15 → create 3 extra threads (max=5)
+ * 4. Tasks 16-25 → REJECTED (queue full, max threads reached)
+ * 
+ * CUSTOM COMPONENTS:
+ * 1. ThreadFactory: Sets NORMAL priority, custom names
+ * 2. RejectedHandler: Logs rejections, doesn't throw
+ * 
+ * =============================================================================
+ */
+
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+
+class CustomThreadFactory implements ThreadFactory {
+    private final AtomicInteger threadNumber = new AtomicInteger(1);
+    private final String namePrefix;
+    
+    public CustomThreadFactory(String poolName) {
+        this.namePrefix = "ThreadPool-" + poolName + "-T";
+    }
+    
+    @Override
+    public Thread newThread(Runnable r) {
+        Thread t = new Thread(r, namePrefix + threadNumber.getAndIncrement());
+        t.setPriority(Thread.NORM_PRIORITY);  // NORMAL priority
+        t.setDaemon(false);                    // User threads (don't prevent JVM exit)
+        System.out.println("🧵 Created: " + t.getName());
+        return t;
+    }
+}
+
+class CustomRejectedHandler implements RejectedExecutionHandler {
+    @Override
+    public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+        System.out.println("🚫 REJECTED: " + r + 
+                          " | Pool: Active=" + executor.getActiveCount() + 
+                          ", Queue=" + executor.getQueue().size() + 
+                          ", Threads=" + executor.getPoolSize());
+        // Don't throw - just log (CallerRunsPolicy alternative)
+    }
+}
+
+//ThreadPoolExecutorDemo
+public class Main {
+    public static void main(String[] args) throws InterruptedException {
+        // ThreadPool config: core=2, max=5, queue=10, keepAlive=1hr
+        int corePoolSize = 2;
+        int maxPoolSize = 5;
+        long keepAliveTime = 1;
+        int queueCapacity = 10;
+        
+        ThreadPoolExecutor poolExecutor = new ThreadPoolExecutor(
+            corePoolSize, maxPoolSize, keepAliveTime, TimeUnit.HOURS,
+            new ArrayBlockingQueue<>(queueCapacity),
+            new CustomThreadFactory("Demo"),           // Custom factory
+            new CustomRejectedHandler()                // Custom reject handler
+        );
+        
+        poolExecutor.allowCoreThreadTimeOut(true);   // Core threads timeout too
+        
+        System.out.println("🚀 Starting 25 tasks...");
+        System.out.println("Capacity: " + (corePoolSize + queueCapacity + (maxPoolSize - corePoolSize)));
+        
+        // Submit 25 tasks (will overflow!)
+        for (int i = 0; i < 25; i++) {
+            final int taskId = i + 1;
+            poolExecutor.submit(() -> {
+                String threadName = Thread.currentThread().getName();
+                try {
+                    System.out.printf("✅ Task-%02d | Thread: %s | ⏱️  Working...\n", 
+                                    taskId, threadName);
+                    Thread.sleep(5000);  // 5 seconds work
+                    System.out.printf("🏁 Task-%02d | Thread: %s | ✅ COMPLETE\n", 
+                                    taskId, threadName);
+                } catch (InterruptedException e) {
+                    System.out.printf("⚠️  Task-%02d interrupted\n", taskId);
+                }
+            });
+        }
+        
+        // Shutdown: No new tasks, wait for existing
+        poolExecutor.shutdown();
+        System.out.println("\n⏹️  Shutdown requested. Waiting for completion...");
+        
+        // Wait max 30 seconds for graceful shutdown
+        if (!poolExecutor.awaitTermination(30, TimeUnit.SECONDS)) {
+            System.out.println("⏰ Timeout - Force shutdown");
+            poolExecutor.shutdownNow();
+        }
+        
+        System.out.println("🏟️  Pool stats: " + 
+                          "Active=" + poolExecutor.getActiveCount() + 
+                          ", Completed=" + poolExecutor.getCompletedTaskCount());
+    }
+}
+
+/**
+ * OUTPUT:
+ 🚀 Starting 25 tasks...
+Capacity: 15
+🧵 Created: ThreadPool-Demo-T1
+🧵 Created: ThreadPool-Demo-T2
+🧵 Created: ThreadPool-Demo-T3
+✅ Task-01 | Thread: ThreadPool-Demo-T1 | ⏱️  Working...
+✅ Task-02 | Thread: ThreadPool-Demo-T2 | ⏱️  Working...
+��� Created: ThreadPool-Demo-T4
+✅ Task-13 | Thread: ThreadPool-Demo-T3 | ⏱️  Working...
+🧵 Created: ThreadPool-Demo-T5
+✅ Task-14 | Thread: ThreadPool-Demo-T4 | ⏱️  Working...
+✅ Task-15 | Thread: ThreadPool-Demo-T5 | ⏱️  Working...
+🚫 REJECTED: java.util.concurrent.FutureTask@1b6d3586[Not completed, task = java.util.concurrent.Executors$RunnableAdapter@7d4991ad[Wrapped task = Main$$Lambda/0x0000000021041800@28d93b30]] | Pool: Active=5, Queue=10, Threads=5
+🚫 REJECTED: java.util.concurrent.FutureTask@45ee12a7[Not completed, task = java.util.concurrent.Executors$RunnableAdapter@6d6f6e28[Wrapped task = Main$$Lambda/0x0000000021041800@135fbaa4]] | Pool: Active=5, Queue=10, Threads=5
+🚫 REJECTED: java.util.concurrent.FutureTask@4b67cf4d[Not completed, task = java.util.concurrent.Executors$RunnableAdapter@330bedb4[Wrapped task = Main$$Lambda/0x0000000021041800@2503dbd3]] | Pool: Active=5, Queue=10, Threads=5
+🚫 REJECTED: java.util.concurrent.FutureTask@29453f44[Not completed, task = java.util.concurrent.Executors$RunnableAdapter@7ea987ac[Wrapped task = Main$$Lambda/0x0000000021041800@12a3a380]] | Pool: Active=5, Queue=10, Threads=5
+🚫 REJECTED: java.util.concurrent.FutureTask@61bbe9ba[Not completed, task = java.util.concurrent.Executors$RunnableAdapter@5cad8086[Wrapped task = Main$$Lambda/0x0000000021041800@6e0be858]] | Pool: Active=5, Queue=10, Threads=5
+🚫 REJECTED: java.util.concurrent.FutureTask@60e53b93[Not completed, task = java.util.concurrent.Executors$RunnableAdapter@610455d6[Wrapped task = Main$$Lambda/0x0000000021041800@511d50c0]] | Pool: Active=5, Queue=10, Threads=5
+🚫 REJECTED: java.util.concurrent.FutureTask@266474c2[Not completed, task = java.util.concurrent.Executors$RunnableAdapter@5e2de80c[Wrapped task = Main$$Lambda/0x0000000021041800@1d44bcfa]] | Pool: Active=5, Queue=10, Threads=5
+🚫 REJECTED: java.util.concurrent.FutureTask@66d3c617[Not completed, task = java.util.concurrent.Executors$RunnableAdapter@6f94fa3e[Wrapped task = Main$$Lambda/0x0000000021041800@5e481248]] | Pool: Active=5, Queue=10, Threads=5
+🚫 REJECTED: java.util.concurrent.FutureTask@355da254[Not completed, task = java.util.concurrent.Executors$RunnableAdapter@63947c6b[Wrapped task = Main$$Lambda/0x0000000021041800@2b193f2d]] | Pool: Active=5, Queue=10, Threads=5
+��� REJECTED: java.util.concurrent.FutureTask@6ff3c5b5[Not completed, task = java.util.concurrent.Executors$RunnableAdapter@4dc63996[Wrapped task = Main$$Lambda/0x0000000021041800@d716361]] | Pool: Active=5, Queue=10, Threads=5
+
+⏹️  Shutdown requested. Waiting for completion...
+🏁 Task-01 | Thread: ThreadPool-Demo-T1 | ✅ COMPLETE
+🏁 Task-02 | Thread: ThreadPool-Demo-T2 | ✅ COMPLETE
+🏁 Task-13 | Thread: ThreadPool-Demo-T3 | ✅ COMPLETE
+🏁 Task-14 | Thread: ThreadPool-Demo-T4 | ✅ COMPLETE
+✅ Task-03 | Thread: ThreadPool-Demo-T1 | ⏱️  Working...
+✅ Task-04 | Thread: ThreadPool-Demo-T2 | ⏱️  Working...
+✅ Task-06 | Thread: ThreadPool-Demo-T4 | ⏱️  Working...
+✅ Task-05 | Thread: ThreadPool-Demo-T3 | ⏱️  Working...
+🏁 Task-15 | Thread: ThreadPool-Demo-T5 | ✅ COMPLETE
+✅ Task-07 | Thread: ThreadPool-Demo-T5 | ⏱️  Working...
+🏁 Task-03 | Thread: ThreadPool-Demo-T1 | ✅ COMPLETE
+🏁 Task-04 | Thread: ThreadPool-Demo-T2 | ✅ COMPLETE
+✅ Task-08 | Thread: ThreadPool-Demo-T1 | ⏱️  Working...
+🏁 Task-06 | Thread: ThreadPool-Demo-T4 | ✅ COMPLETE
+🏁 Task-05 | Thread: ThreadPool-Demo-T3 | ✅ COMPLETE
+✅ Task-09 | Thread: ThreadPool-Demo-T2 | ⏱️  Working...
+🏁 Task-07 | Thread: ThreadPool-Demo-T5 | ✅ COMPLETE
+✅ Task-10 | Thread: ThreadPool-Demo-T4 | ⏱️  Working...
+✅ Task-11 | Thread: ThreadPool-Demo-T3 | ⏱️  Working...
+✅ Task-12 | Thread: ThreadPool-Demo-T5 | ⏱️  Working...
+🏁 Task-08 | Thread: ThreadPool-Demo-T1 | ✅ COMPLETE
+🏁 Task-09 | Thread: ThreadPool-Demo-T2 | ✅ COMPLETE
+🏁 Task-10 | Thread: ThreadPool-Demo-T4 | ✅ COMPLETE
+🏁 Task-11 | Thread: ThreadPool-Demo-T3 | ✅ COMPLETE
+🏁 Task-12 | Thread: ThreadPool-Demo-T5 | ✅ COMPLETE
+🏟️  Pool stats: Active=0, Completed=15
+ * /
+
+ -> Key Behaviors Demonstrated:
+
+    1. Core threads created immediately (2)
+    
+    2. Queue fills (10 tasks)
+    
+    3. Max threads created (5 total)
+    
+    4. Rejections logged (10 tasks)
+    
+    5. Custom naming/priority
+    
+    6. Graceful shutdown
+ 
+ */
+ 
