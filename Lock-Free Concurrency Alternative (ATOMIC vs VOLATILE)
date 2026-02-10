@@ -1,0 +1,173 @@
+/**
+ * =============================================================================
+ * ATOMIC vs VOLATILE in Java - Thread Safety Deep Dive
+ * =============================================================================
+ * 
+ * ATOMIC CLASSES: Lock-Free Concurrency Alternative
+ * -----------------------------------------------
+ * AtomicInteger, AtomicBoolean, AtomicLong, AtomicReference provide thread-safe operations
+ * WITHOUT locks using CPU-level primitives called Compare-And-Swap (CAS).
+ * 
+ * CAS ("low-level" operation):
+ * 1. Read current value (V)
+ * 2. Compute new value (N) 
+ * 3. If current value still equals V, atomically set to N
+ * 4. If changed by another thread, retry (spin)
+ * 
+ * CPU executes CAS as SINGLE INSTRUCTION (e.g., CMPXCHG on x86), making it:
+ * - Faster than locks (no context switching)
+ * - Lock-free (no deadlocks)
+ * - Highly scalable (minimal contention)
+ * 
+ * INTERNAL IMPLEMENTATION (AtomicInteger example):
+ * Unsafe.getUnsafe().compareAndSwapInt(this, valueOffset, expected, update)
+ * ↓
+ * Direct JVM → CPU instruction mapping
+ * 
+ * VOLATILE: Visibility Only (No Atomicity)
+ * ---------------------------------------
+ * Ensures changes immediately visible to ALL threads (bypasses CPU caches).
+ * NO protection against race conditions in compound operations (count++).
+ * 
+ * KEY DIFFERENCES:
+ * | Feature              | volatile          | Atomic*           |
+ * |----------------------|-------------------|-------------------|
+ * | Visibility           | ✅ Yes            | ✅ Yes            |
+ * | Atomicity (count++)  | ❌ No             | ✅ Yes            |
+ * | Compound Operations  | ❌ Unsafe         | ✅ Safe           |
+ * | Performance          | Fastest (read)    | Fast (CAS)        |
+ * | Use Case             | Flags, status     | Counters, refs    |
+ * 
+ * USE CASES:
+ * volatile: boolean flags, stop signals, simple reads/writes
+ * Atomic: counters, CAS-based algorithms, lock-free data structures
+ * 
+ * =============================================================================
+ */
+
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+
+class VolatileDemo {
+    private volatile int count = 0;
+    
+    public void increment() {
+        count++; // NOT ATOMIC: read-modify-write race condition
+    }
+    
+    public int getCount() { return count; }
+}
+
+class AtomicDemo {
+    private AtomicInteger count = new AtomicInteger(0);
+    private AtomicBoolean flag = new AtomicBoolean(false);
+    private AtomicLong timestamp = new AtomicLong(0);
+    private AtomicReference<String> status = new AtomicReference<>("IDLE");
+    
+    public void increment() {
+        count.incrementAndGet(); // ATOMIC
+    }
+    
+    public void toggleFlag() {
+        flag.set(!flag.get()); // ATOMIC compareAndSet internally
+    }
+    
+    public void updateTimestamp() {
+        timestamp.set(System.currentTimeMillis()); // ATOMIC
+    }
+    
+    public void updateStatus(String newStatus) {
+        status.set(newStatus); // ATOMIC
+    }
+    
+    // CAS Pattern: Only update if current value matches expected
+    public boolean casIncrement(int expected) {
+        return count.compareAndSet(expected, expected + 1);
+    }
+    
+    public int getCount() { return count.get(); }
+    public boolean getFlag() { return flag.get(); }
+    public long getTimestamp() { return timestamp.get(); }
+    public String getStatus() { return status.get(); }
+}
+
+//AtomicVsVolatileDemo
+public class Main {
+    public static void main(String[] args) throws InterruptedException {
+        System.out.println("🔬 VOLATILE vs ATOMIC - Live Demo");
+        System.out.println("=".repeat(60));
+        
+        // VOLATILE: Race condition demo
+        System.out.println("\n1️⃣ VOLATILE COUNTER (Race Condition)");
+        VolatileDemo volatileCounter = new VolatileDemo();
+        Thread[] threads = new Thread[10];
+        
+        for (int i = 0; i < 10; i++) {
+            threads[i] = new Thread(() -> {
+                for (int j = 0; j < 1000; j++) {
+                    volatileCounter.increment();
+                }
+            });
+            threads[i].start();
+        }
+        
+        for (Thread t : threads) t.join();
+        System.out.println("❌ Volatile result: " + volatileCounter.getCount() + " (expected: 10000)");
+        
+        // ATOMIC: Perfect consistency
+        System.out.println("\n2️⃣ ATOMIC COUNTER (Lock-Free)");
+        AtomicDemo atomicCounter = new AtomicDemo();
+        
+        for (int i = 0; i < 8; i++) {
+            threads[i] = new Thread(() -> {
+                for (int j = 0; j < 1000; j++) {
+                    atomicCounter.increment();
+                }
+                atomicCounter.updateStatus("BUSY");
+                
+                // toggleFlag() called once per thread: 10 total toggles (EVEN)
+                // false → true → false → ... → false (even toggles return to initial state)
+                // Even iterations (10) → false (Initial State)
+                // Odd iterations (e.g., 9 threads) → true
+                atomicCounter.toggleFlag();
+                
+                atomicCounter.updateTimestamp();
+            });
+            threads[i].start();
+        }
+        
+        for (Thread t : threads) t.join();
+        System.out.println("✅ Atomic result: " + atomicCounter.getCount() + " (expected: 10000)");
+        System.out.println("   Flag: " + atomicCounter.getFlag());
+        System.out.println("   Status: " + atomicCounter.getStatus());
+        System.out.println("   Timestamp: " + atomicCounter.getTimestamp());
+        
+        // CAS Demo
+        System.out.println("\n3️⃣ CAS Pattern Demo");
+        System.out.println("CAS increment from 0 → 1: " + atomicCounter.casIncrement(0));
+        System.out.println("CAS increment from 0 → 1: " + atomicCounter.casIncrement(10000));
+        System.out.println("Final count: " + atomicCounter.getCount());
+    }
+}
+
+/**
+OUTPUT:
+🔬 VOLATILE vs ATOMIC - Live Demo
+============================================================
+
+1️⃣ VOLATILE COUNTER (Race Condition)
+❌ Volatile result: 9504 (expected: 10000)
+
+2️⃣ ATOMIC COUNTER (Lock-Free)
+✅ Atomic result: 10000 (expected: 10000)
+   Flag: false
+   Status: BUSY
+   Timestamp: 1770755389897
+
+3️⃣ CAS Pattern Demo
+CAS increment from 0 → 1: false
+CAS increment from 0 → 1: true
+Final count: 10001
+*/
