@@ -1,0 +1,92 @@
+/**
+ * =============================================================================
+ * FUTURE Object Demo - Asynchronous Task Result Handling
+ * =============================================================================
+ * 
+ * FUTURE INTERFACE: Represents the result of an async task
+ * Key Methods:
+ * ✅ isDone()     - Check if computation completed
+ * ✅ get()        - Block & get result (or wait forever)
+ * ✅ get(timeout) - Block with timeout
+ * ✅ isCancelled()- Check if task was cancelled
+ * ✅ cancel()     - Attempt to cancel task
+ * 
+ * BEHAVIOR:
+ * 1. submit() returns Future immediately
+ * 2. Main thread continues (non-blocking)
+ * 3. isDone() = false initially
+ * 4. get(2s) → TimeoutException (task takes 7.8s)
+ * 5. After timeout, task STILL running in background
+ * 6. Final isDone() = true (task completed)
+ * 
+ * USE CASES: Fire-and-forget tasks, timeout control, result checking
+ * =============================================================================
+ */
+
+import java.util.concurrent.*;
+
+//FutureDemo
+public class Main {
+    public static void main(String[] args) {
+        ThreadPoolExecutor poolExecutor = new ThreadPoolExecutor(
+            1, 1, 1, TimeUnit.HOURS,
+            new ArrayBlockingQueue<>(10),
+            Executors.defaultThreadFactory(),
+            new ThreadPoolExecutor.AbortPolicy()
+        );
+
+        // Submit async task → returns Future IMMEDIATELY
+        Future<?> futureObj = poolExecutor.submit(() -> {
+            try {
+                System.out.println("🚀 Task started by: " + Thread.currentThread().getName());
+                Thread.sleep(7800);  // 7.8 seconds work
+                System.out.println("✅ Task COMPLETED");
+            } catch (Exception e) {
+                System.out.println("❌ Task failed: " + e.getMessage());
+            }
+        });
+
+        System.out.println("📤 Task submitted. Main continues...");
+        System.out.println("⏳ isDone: " + futureObj.isDone());  // false
+
+        // Try to get result with 2-second timeout
+        try {
+            System.out.println("⏱️  Waiting 2s for result...");
+            futureObj.get(2, TimeUnit.SECONDS);  // TIMEOUT!
+            System.out.println("✅ Result received");
+        } catch (TimeoutException e) {
+            System.out.println("⏰ TIMEOUT after 2s (task still running in background)");
+        } catch (Exception e) {
+            System.out.println("❌ Other exception: " + e.getMessage());
+        }
+
+        // Check final state (task completes during timeout wait)
+        System.out.println("🔍 Final state:");
+        System.out.println("   isDone: " + futureObj.isDone());      // false
+        System.out.println("   isCancelled: " + futureObj.isCancelled()); // false
+        
+        try{
+            System.out.println("Blocking call to wait for result: "+futureObj.get());
+        } catch(Exception e) {
+            System.out.println("Exception occured at Blocking call: " + e.getMessage());
+        }
+
+        poolExecutor.shutdown();
+        System.out.println("🏁 Demo complete");
+    }
+}
+
+/**
+ * OUTPUT:
+    📤 Task submitted. Main continues...
+    ⏳ isDone: false
+    🚀 Task started by: pool-1-thread-1
+    ⏱️  Waiting 2s for result...
+    ⏰ TIMEOUT after 2s (task still running in background)
+    🔍 Final state:
+       isDone: false
+       isCancelled: false
+    ✅ Task COMPLETED
+    Blocking call to wait for result: null
+    🏁 Demo complete
+*/
