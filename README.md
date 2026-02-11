@@ -23,6 +23,9 @@ I’ll be writing notes, adding examples, and summarizing key learnings for quic
 • (Optimistic vs Pessimistic) Read & Write Lock functionality using StampedLock <br/>
 • Lock-Free Concurrency Alternative (ATOMIC vs VOLATILE) <br/>
 • ThreadPoolExecutor Demo <br/>
+• FUTURE Object Demo - Asynchronous Task Result Handling <br/>
+• FUTURE Variants Demo - 3 Overloaded submit() Methods <br/>
+• CompletableFuture Demo (Java 8) <br/>
 <br/>
 
 ## 3. Design Patterns
