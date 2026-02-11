@@ -1,0 +1,177 @@
+/**
+ * =============================================================================
+ * CompletableFuture in Java 8 - Async Programming Basics
+ * =============================================================================
+ * CompletableFuture:
+ * - An advanced Future for async programming.
+ * - Supports non-blocking, chaining, combining, and composing of async tasks.
+ * - By default uses ForkJoinPool.commonPool() for async methods (unless custom executor is provided).
+ *
+ * Core methods showcased:
+ * 1. supplyAsync(...)          → Start async computation that RETURNS a value.
+ * 2. thenApply(...)            → Transform result (sync, same thread chain).
+ * 3. thenCompose(...)          → Flat-chain dependent async tasks.
+ * 4. thenAccept(...)           → Consume result (end of chain, no return).
+ * 5. thenCombine(...)          → Combine results of two independent futures.
+ *
+ * Async variants (thenApplyAsync / thenComposeAsync / thenAcceptAsync / thenCombineAsync)
+ * - Same semantics but run the continuation in a (possibly) different thread,
+ *   usually from ForkJoinPool.commonPool() or a custom executor.
+ * =============================================================================
+ */
+
+import java.util.concurrent.*;
+import java.util.function.Supplier;
+
+// CompletableFutureDemo
+public class Main {
+
+    public static void main(String[] args) throws Exception {
+        System.out.println("=== CompletableFuture Demo ===");
+
+        supplyAsyncThenApplyDemo();
+        thenComposeDemo();
+        thenAcceptDemo();
+        thenCombineDemo();
+
+        // Give async tasks a bit of time before main exits
+        Thread.sleep(1000);
+        System.out.println("=== Demo Finished ===");
+    }
+
+    /**
+     * 1) supplyAsync + thenApply
+     * supplyAsync(Supplier) starts an async computation that returns a value.
+     * thenApply(Function) synchronously transforms the result of the previous stage.
+     */
+    private static void supplyAsyncThenApplyDemo() throws Exception {
+        System.out.println("\n--- 1) supplyAsync + thenApply ---");
+
+        CompletableFuture<Integer> future =
+            CompletableFuture.supplyAsync(() -> {
+                System.out.println("supplyAsync: compute 10 (thread: " +
+                        Thread.currentThread().getName() + ")");
+                return 10;
+            })
+            .thenApply(n -> {
+                System.out.println("thenApply: multiply by 2 (thread: " +
+                        Thread.currentThread().getName() + ")");
+                return n * 2; // uses previous result (10) → 20
+            });
+
+        Integer result = future.get(); // blocking just for demo
+        System.out.println("Result = " + result); // 20
+    }
+
+    /**
+     * 2) thenCompose
+     * thenCompose(Function<T, CompletionStage<U>>) is used to chain dependent async tasks:
+     * - Second async computation depends on the result of the first.
+     * - Avoids nested CompletableFuture<CompletableFuture<T>>.
+     */
+    private static void thenComposeDemo() throws Exception {
+        System.out.println("\n--- 2) thenCompose (dependent async tasks) ---");
+
+        CompletableFuture<Integer> future =
+            CompletableFuture.supplyAsync(() -> {
+                System.out.println("First async: 5 (thread: " +
+                        Thread.currentThread().getName() + ")");
+                return 5;
+            })
+            .thenCompose(n -> {
+                // n is 5; now start another async computation using n
+                return CompletableFuture.supplyAsync(() -> {
+                    System.out.println("Second async: (5 + 3) (thread: " +
+                            Thread.currentThread().getName() + ")");
+                    return n + 3; // 8
+                });
+            });
+
+        Integer result = future.get();
+        System.out.println("Result = " + result); // 8
+    }
+
+    /**
+     * 3) thenAccept
+     * thenAccept(Consumer<T>) consumes the result and returns CompletableFuture<Void>.
+     * Typically used as the terminal stage to "do something" with the final result.
+     */
+    private static void thenAcceptDemo() throws Exception {
+        System.out.println("\n--- 3) thenAccept (consume result) ---");
+
+        CompletableFuture<Void> future =
+            CompletableFuture.supplyAsync(() -> {
+                System.out.println("supplyAsync: compute 42 (thread: " +
+                        Thread.currentThread().getName() + ")");
+                return 42;
+            })
+            .thenAccept(value -> {
+                // No return, just consume
+                System.out.println("thenAccept: final value = " + value +
+                        " (thread: " + Thread.currentThread().getName() + ")");
+            });
+
+        future.get(); // wait so output is visible
+    }
+
+    /**
+     * 4) thenCombine
+     * thenCombine(otherFuture, BiFunction) combines the results of two independent futures.
+     * Both run in parallel; thenCombine is called when both complete.
+     */
+    private static void thenCombineDemo() throws Exception {
+        System.out.println("\n--- 4) thenCombine (combine two futures) ---");
+
+        CompletableFuture<Integer> f1 =
+            CompletableFuture.supplyAsync(() -> {
+                System.out.println("f1: compute 10 (thread: " +
+                        Thread.currentThread().getName() + ")");
+                return 10;
+            });
+
+        CompletableFuture<Integer> f2 =
+            CompletableFuture.supplyAsync(() -> {
+                System.out.println("f2: compute 20 (thread: " +
+                        Thread.currentThread().getName() + ")");
+                return 20;
+            });
+
+        CompletableFuture<Integer> combined =
+            f1.thenCombine(f2, (a, b) -> {
+                System.out.println("thenCombine: a + b = " + a + " + " + b +
+                        " (thread: " + Thread.currentThread().getName() + ")");
+                return a + b; // 30
+            });
+
+        Integer result = combined.get();
+        System.out.println("Combined Result = " + result); // 30
+    }
+}
+
+/**
+OUTPUT:
+
+=== CompletableFuture Demo ===
+
+--- 1) supplyAsync + thenApply ---
+supplyAsync: compute 10 (thread: ForkJoinPool.commonPool-worker-1)
+thenApply: multiply by 2 (thread: ForkJoinPool.commonPool-worker-1)
+Result = 20
+
+--- 2) thenCompose (dependent async tasks) ---
+First async: 5 (thread: ForkJoinPool.commonPool-worker-1)
+Second async: (5 + 3) (thread: ForkJoinPool.commonPool-worker-1)
+Result = 8
+
+--- 3) thenAccept (consume result) ---
+supplyAsync: compute 42 (thread: ForkJoinPool.commonPool-worker-1)
+thenAccept: final value = 42 (thread: main)
+
+--- 4) thenCombine (combine two futures) ---
+f1: compute 10 (thread: ForkJoinPool.commonPool-worker-1)
+f2: compute 20 (thread: ForkJoinPool.commonPool-worker-1)
+thenCombine: a + b = 10 + 20 (thread: main)
+Combined Result = 30
+=== Demo Finished ===
+
+*/
