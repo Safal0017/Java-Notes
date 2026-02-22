@@ -31,5 +31,10 @@ I’ll be writing notes, adding examples, and summarizing key learnings for quic
 ## 3. Design Patterns
 • Singleton Patterns + Immutable Class <br/>
 <br/>
+
+## 4. Variable Arguments & Heap Pollution
+• Heap Pollution & Varargs Demo <br/>
+<br/>
+
 🎯 Goal
 To build a strong understanding of Java programming by learning, practicing, and documenting along the way.
